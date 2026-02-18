@@ -40,6 +40,7 @@ describe('GET /api/auth/me', () => {
             .send({ email: 'me@example.com', password });
         expect(loginRes.status).toBe(200);
         const setCookie = loginRes.headers[ 'set-cookie' ];
+        // toBeDefined mtlb setCookie khali nahi hona chahiye, yani login successful hona chahiye aur cookie set honi chahiye
         expect(setCookie).toBeDefined();
 
         // call /me with cookie

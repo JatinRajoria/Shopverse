@@ -6,5 +6,5 @@ connectDB();
 
 // 3001 isliye kyuki 3000 pr auth service run kr rha h
 app.listen(3001, () => {
-    console.log('Product Service is running on port 4000');
+    console.log('Product Service is running on port 3001');
 });

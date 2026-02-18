@@ -190,13 +190,14 @@ async function deleteUserAddress(req, res) {
         $pull: {
             addresses: { _id: addressId }
         }
-    }, { new: true });
+    }, { new: true }); //updated version ka address return krne ke liye new: true use krte hai
 
     if (!user) {
         return res.status(404).json({ message: "User not found" });
     }
 
-    const addressExists = user.addresses.some(addr => addr._id.toString() === addressId);
+    const addressExists = user.addresses.some(addr => addr._id.toString() === addressId); // some method se check karenge ki address abhi bhi exist krta hai ya nhi, agar exist krta hai to iska matlab delete nhi hua, aur agar exist nhi krta to iska matlab delete ho chuka hai
+    // some method array ke andar se ek condition check krta hai, aur agar koi element us condition ko satisfy krta hai to true return krta hai, aur agar koi element satisfy nhi krta to false return krta hai
     if (addressExists) {
         return res.status(500).json({ message: "Failed to delete address" });
     }
