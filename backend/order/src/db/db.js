@@ -3,10 +3,11 @@ const mongoose = require('mongoose');
 async function connectDB() {
     try {
         await mongoose.connect(process.env.MONGO_URI);
-        console.log('Connected to the cart database');
+        
+        console.log('Connected to the order database');
     }
     catch (error) {
-        console.error('Error connecting to the cart database:', error);
+        console.error('Error connecting to the order database:', error);
     }
 }
 

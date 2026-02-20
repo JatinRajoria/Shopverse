@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 
 // ye hai ek middleware jo apko role based authentication provide karega. Aap isko apne routes me use kar sakte ho jaha aapko user ke role ke hisab se access dena hai.
 function createAuthMiddleware(roles = ["user"]) {
+    // ye higher order function hai jo ek middleware function return karta hai. Aap isme roles pass kar sakte ho jise aap allow karna chahte ho, by default ye "user" role ko allow karega.
     return function authMiddleware(req, res, next) {
         const token = req.cookies?.token || req.headers?.authorization?.split(' ')[1];
         if (!token) {

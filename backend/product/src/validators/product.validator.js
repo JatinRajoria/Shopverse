@@ -25,6 +25,7 @@ const createProductValidators = [
     body('priceAmount')
         .notEmpty()
         .withMessage('priceAmount is required')
+        // iska mtlb yhi glti mil gyi toh agge mt bdho
         .bail()
         .isFloat({ gt: 0 })
         .withMessage('priceAmount must be a number > 0'),

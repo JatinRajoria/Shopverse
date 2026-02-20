@@ -80,7 +80,6 @@ async function getProductById(req, res) {
     }
 
     return res.status(200).json({
-        message: "product fetched",
         data: product });
 }
 
