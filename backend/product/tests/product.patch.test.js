@@ -89,6 +89,7 @@ describe('PATCH /api/products/:id (SELLER)', () => {
     });
 
     it("forbids updating another seller's product (403)", async () => {
+        // iska mtlb seller ki id 1 hai toh 1 dal do vrna seller ki id2 leleo
         const otherProd = await createProduct({ seller: sellerId2 });
         const token = signToken(sellerId1.toHexString(), 'seller');
         const res = await request(app)

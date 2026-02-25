@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-// agar developer role bhejna bhul jaye toh default role user le lega
 function createAuthMiddleware(roles = [ "user" ]) {
 
     return function authMiddleware(req, res, next) {

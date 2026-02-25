@@ -46,6 +46,7 @@ describe('GET /api/products/:id', () => {
     it('returns 400 for invalid object id', async () => {
         const res = await request(app).get('/api/products/not-a-valid-id');
         expect(res.status).toBe(400);
+        // isme i ka mtlb hai ki uppercase or lowercase dono chlenge
         expect(res.body.message).toMatch(/invalid product id/i);
     });
 

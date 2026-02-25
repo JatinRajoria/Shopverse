@@ -42,6 +42,7 @@ async function createProduct(req, res) {
 }
 
 async function getProducts(req, res) {
+    // req.query frontend se ata hai jab koi user apki website pr search krta hai ya filter lgata hai
     const { q, minprice, maxprice, skip=0, limit=20 } = req.query;
 
     const filter = {};
@@ -103,9 +104,9 @@ async function updateProduct(req, res) {
     }
 
     const allowUpdates = ['title', 'description', 'price'];
-    for( const key of Object.keys(req.body)) {
+    for( const key of Object.keys(req.body)) {   
         if(allowUpdates.includes(key)) {
-            if (key === 'price' && typeof req.body.price === 'object') {
+            if (key === 'price' && typeof req.body.price === 'object') {  //puri values overwrite na ho isliye object hai toh ek ek krke update krega values
                 if (req.body.price.amount !== undefined) {
                     product.price.amount = Number(req.body.price.amount);
                 }
