@@ -61,7 +61,7 @@ describe('POST /api/orders — Create order from current cart', () => {
     });
 
 
-    it('returns 422 when shipping address is missing/invalid', async () => {
+    it('returns 400 when shipping address is missing/invalid', async () => {
         const res = await request(app)
             .post('/api/orders')
             .set('Cookie', getAuthCookie())

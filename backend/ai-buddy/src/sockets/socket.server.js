@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 // token cookies me atta hai isliye
 const cookie = require('cookie');
+const agent = require("../agent/agent");
 
 async function initSocketServer(httpServer) {
     const io = new Server(httpServer, {})
@@ -20,6 +21,7 @@ async function initSocketServer(httpServer) {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             socket.user = decoded;
+            socket.token = token;
 
             next();
         }
@@ -29,7 +31,33 @@ async function initSocketServer(httpServer) {
     })
 
     io.on('connection', (socket) => {
-        console.log("A user connected");
+
+        // security ke liye ek aur chiz console krwa rhe hai
+        console.log(socket.user, socket.token);
+
+        // console.log("A user connected");
+
+        socket.on('message', async(data) => {
+            // console.log("Recieved Message: ", data);
+
+            const agentResponse = await agent.invoke({
+                messages: [
+                    {
+                        role: "user",
+                        content: data
+                    }
+                ]
+            },{
+                metadata: {
+                    token: socket.token
+                }
+            })
+            // console.log("Agent Response: ", agentResponse);
+
+            const lastMessage = agentResponse.messages[ agentResponse.messages.length - 1 ]
+
+            socket.emit('message', lastMessage.content)
+        })
     })
 }
 

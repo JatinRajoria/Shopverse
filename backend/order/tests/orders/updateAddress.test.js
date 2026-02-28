@@ -33,7 +33,7 @@ describe('PATCH /api/orders/:id/address — Update delivery address prior to pay
                 street: '123 Main St',
                 city: 'Metropolis',
                 state: 'NY',
-                zip: '10001',
+                pincode: '10001',
                 country: 'USA'
             }
         });
@@ -74,7 +74,7 @@ describe('PATCH /api/orders/:id/address — Update delivery address prior to pay
                 street: '123 Main St',
                 city: 'Metropolis',
                 state: 'NY',
-                zip: '10001',
+                pincode: '10001',
                 country: 'USA'
             }
         });

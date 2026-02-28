@@ -2,6 +2,7 @@ const userModel = require('../models/user.model');
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const redis = require('../db/redis');
+const { publishToQueue } = require("../broker/broker");
 
 async function registerUser(req, res) {
     try{
@@ -26,6 +27,14 @@ async function registerUser(req, res) {
         password: hash,
         fullName: { firstName, lastName },
         role: role || "user" //default role user hoga agar role provide nhi kiya gaya toh
+    })
+
+    // jesse jo ek user register hoga toh (publish user created event to RabitMQ) (ye data jayega notification service pe)
+    await publishToQueue('AUTH_NOTIFICATION.USER_CREATED', {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
     })
 
     const token = jwt.sign({
@@ -216,5 +225,6 @@ module.exports = {
     logoutUser,
     getUserAddresses,
     addUserAddress,
-    deleteUserAddress
+    deleteUserAddress,
+    publishToQueue
 };

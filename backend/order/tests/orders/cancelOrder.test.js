@@ -31,7 +31,7 @@ describe('POST /api/orders/:id/cancel — Buyer-initiated cancel while rules app
                 street: '123 Main St',
                 city: 'Metropolis',
                 state: 'CA',
-                zip: '90210',
+                pincode: '90210',
                 country: 'USA',
             },
 
@@ -69,7 +69,7 @@ describe('POST /api/orders/:id/cancel — Buyer-initiated cancel while rules app
                 street: '123 Main St',
                 city: 'Metropolis',
                 state: 'CA',
-                zip: '90210',
+                pincode: '90210',
                 country: 'USA',
             },
 
@@ -100,7 +100,7 @@ describe('POST /api/orders/:id/cancel — Buyer-initiated cancel while rules app
                 street: '123 Main St',
                 city: 'Metropolis',
                 state: 'NY',
-                zip: '10001',
+                pincode: '10001',
                 country: 'USA'
             }
         });
