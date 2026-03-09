@@ -5,8 +5,11 @@ const cookie = require('cookie');
 const agent = require("../agent/agent");
 
 async function initSocketServer(httpServer) {
-    const io = new Server(httpServer, {})
+    const io = new Server(httpServer, {
+        // path: "/api/socket/socket.io/",
+    })
 
+    // middleware
     io.use((socket, next) => {
         const cookies = socket.handshake.headers?.cookie;
 

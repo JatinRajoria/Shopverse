@@ -1,8 +1,11 @@
 require('dotenv').config();
 const app = require('./src/app');
 const connectDB = require('./src/db/db');
+const { connect } = require("./src/broker/broker");
 
 connectDB();
+
+connect();
 
 // 3001 isliye kyuki 3000 pr auth service run kr rha h
 app.listen(3001, () => {

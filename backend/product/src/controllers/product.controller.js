@@ -1,6 +1,7 @@
 const productModel = require('../models/product.model');
 const mongoose = require('mongoose');
 const { uploadImage } = require('../services/imagekit.service');
+const { publishToQueue } = require('../broker/broker');
 
 // Accepts multipart/form-data with fields: title, description, priceAmount, priceCurrency and images (array of files)
 async function createProduct(req, res) {
@@ -28,6 +29,10 @@ async function createProduct(req, res) {
             seller,
             images
         });
+
+        // jesse hi ek product create hoga uske baad
+        await publishToQueue("PRODUCT_SELLER_DASHBOARD.PRODUCT_CREATED", product);
+
         return res.status(201).json({
             message: "product created",
             data: product,

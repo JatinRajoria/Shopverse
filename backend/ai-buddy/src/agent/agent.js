@@ -4,7 +4,7 @@ const { ToolMessage, AIMessage, HumanMessage } = require("@langchain/core/messag
 const tools = require("./tools");
 
 const model = new ChatGoogleGenerativeAI({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash",
     temperature: 0.5,
     apiKey : process.env.GEMINI_API_KEY
 })
@@ -58,3 +58,6 @@ const agent = graph.compile()
 
 
 module.exports = agent
+
+
+// Aksar developers tools node ko upar isliye likhte hain kyunki chat node ko kabhi-kabhi tools ki list ki zaroorat padti hai (unhe "Bind" karne ke liye).

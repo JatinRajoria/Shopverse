@@ -29,13 +29,18 @@ async function registerUser(req, res) {
         role: role || "user" //default role user hoga agar role provide nhi kiya gaya toh
     })
 
-    // jesse jo ek user register hoga toh (publish user created event to RabitMQ) (ye data jayega notification service pe)
-    await publishToQueue('AUTH_NOTIFICATION.USER_CREATED', {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        fullName: user.fullName,
-    })
+    // promise.all krne se dono promise sequence ke wajay dono parallel chl rhe honge
+    await Promise.all([
+        // jesse jo ek user register hoga toh (publish user created event to RabitMQ) (ye data jayega notification service pe)
+        publishToQueue('AUTH_NOTIFICATION.USER_CREATED', {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            fullName: user.fullName,
+        }),
+        // jesse hi humara user create hoga hum use queue ke andar bhej denge
+        await publishToQueue('AUTH_SELLER_DASHBOARD.USER_CREATED', user)
+    ]);
 
     const token = jwt.sign({
         id: user._id,

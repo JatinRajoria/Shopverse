@@ -2,6 +2,7 @@ const { tool } = require("@langchain/core/tools");
 const { z } = require("zod");
 const axios = require("axios");
 
+// isme token metadata ke through aa rha hai (token ai ko bhej ke change nhi krwana isliye metadata ke through bhejenge)
 const searchProduct = tool(async ({ query, token }) => {
 
     console.log("Search Product called with data: ", { query, token })
@@ -11,7 +12,7 @@ const searchProduct = tool(async ({ query, token }) => {
             Authorization: `Bearer ${token}`
         }
     })
-    // kyu ki jitne bhi tool create krenge vo string format me hi return krne chiye
+    // kyu ki jitne bhi tool create krenge vo string format me hi return krne chiye kyu ki ai string hi read krta hai
     return JSON.stringify(response.data);
 },{
     name: "searchProduct",

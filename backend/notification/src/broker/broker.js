@@ -43,6 +43,7 @@ async function subscribeToQueue(queueName, callback) {
 
      await channel.assertQueue(queueName, {
         durable: true
+        // durable true ka mmtlb data ko humesha yaad rkhna (sirf queue safe hoti hai)
     });
 
     channel.consume(queueName, async(msg)=> {
