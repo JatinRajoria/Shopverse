@@ -6,7 +6,7 @@ const { publishToQueue } = require('../broker/broker');
 // Accepts multipart/form-data with fields: title, description, priceAmount, priceCurrency and images (array of files)
 async function createProduct(req, res) {
     try {
-        const { title, description, priceAmount, priceCurrency = 'INR' } = req.body
+        const { title, description, priceAmount, priceCurrency = 'INR', stock } = req.body
 
         if (!title || !priceAmount) {
             return res.status(400).json({
@@ -27,7 +27,8 @@ async function createProduct(req, res) {
             description,
             price,
             seller,
-            images
+            images,
+            stock
         });
 
         // jesse hi ek product create hoga uske baad
@@ -48,7 +49,7 @@ async function createProduct(req, res) {
 
 async function getProducts(req, res) {
     // req.query frontend se ata hai jab koi user apki website pr search krta hai ya filter lgata hai
-    const { q, minprice, maxprice, skip=0, limit=20 } = req.query;
+    const { q, minprice, maxprice, skip=0, limit=20, } = req.query;
 
     const filter = {};
 
@@ -64,7 +65,10 @@ async function getProducts(req, res) {
         filter['price.amount'] = { ...filter['price.amount'], $lte: Number(maxprice) };
     }
 
+    // total dekhne ke liye ui pr ki 
+
     const products = await productModel.find(filter).skip(Number(skip)).limit(Math.min(Number(limit),20)); //mtlb ek time pr apan 20 products hi bhejenge, chahe client jitna bhi maange, isse server overload nhi hoga
+    
     return res.json({
         message: "products fetched",
         data: products,
