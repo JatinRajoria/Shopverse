@@ -48,6 +48,7 @@ async function addItemToCart(req,res){
     }
 
     await cart.save();
+    await cart.populate('items.productId');
 
     res.status(200).json({
         message:"Item added to cart",
@@ -72,10 +73,28 @@ async function updateItemQuantity(req, res) {
     res.status(200).json({ message: 'Item updated', cart });
 }
 
+async function removeItemFromCart(req, res) {
+    const { productId } = req.params;
+    const user = req.user;
 
+    const cart = await cartModel.findOne({ user: user.id });
+    if (!cart) return res.status(404).json({ message: 'Cart not found' });
+
+    // Filter karke us product ko nikal do
+    cart.items = cart.items.filter(item => item.productId.toString() !== productId);
+
+    await cart.save();
+   
+
+    res.status(200).json({ 
+        message: 'Item removed from cart', 
+        cart 
+    });
+}
 
 module.exports = {
     addItemToCart,
     updateItemQuantity,
-    getCart
+    getCart,
+    removeItemFromCart
 }
