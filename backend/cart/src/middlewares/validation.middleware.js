@@ -9,7 +9,6 @@ function  validateResult(req,res,next){
     }
     next();
 }
-
 const validateAddItemToCart = [
     body('productId')
         .isString()
@@ -23,20 +22,26 @@ const validateAddItemToCart = [
 
     validateResult
 ]
-
 const validateUpdateCartItem = [
     param('productId')
         .isString()
         .withMessage('Product ID must be a string')
-        .custom(value => mongoose.Types.ObjectId.isValid(value)) //check kr rhe hai ki mongoose id ka formate toh valid hai na 
-        .withMessage("Invalid Product ID format"),
+        .custom(value => mongoose.Types.ObjectId.isValid(value))
+        .withMessage('Invalid Product ID format'),
     body('qty')
-        .isInt({gt:0}) //greater than  zero nahi hai toh positive integer honi chiye quantity
+        .isInt({ gt: 0 })
         .withMessage('Quantity must be a positive integer'),
-    validateResult
-]
+    validateResult,
+];
+const validateDeleteCartItem = [
+    param('productId')
+        .custom((value) => mongoose.Types.ObjectId.isValid(value))
+        .withMessage('Invalid Product ID format'),
+    // Yahan humne qty nahi mangi, sirf ID check ki hai
+];
 
 module.exports = {
     validateAddItemToCart,
-    validateUpdateCartItem
+    validateUpdateCartItem,
+    validateDeleteCartItem
 }

@@ -1,9 +1,9 @@
-const productModel = require('../models/product.model');
+const productModel = require("../models/product.model")
+const { uploadImage } = require('../services/imagekit.service')
 const mongoose = require('mongoose');
-const { uploadImage } = require('../services/imagekit.service');
-const { publishToQueue } = require('../broker/broker');
+const { publishToQueue } = require('../broker/broker')
 
-// Accepts multipart/form-data with fields: title, description, priceAmount, priceCurrency and images (array of files)
+//accepts multipart/form-data with fields...
 async function createProduct(req, res) {
     try {
         const { title, description, priceAmount, priceCurrency = 'INR', stock } = req.body
@@ -20,7 +20,13 @@ async function createProduct(req, res) {
             currency: priceCurrency
         };
 
-        const images = await Promise.all((req.files || []).map(file => uploadImage({ buffer: file.buffer })));
+        const images = await Promise.all((req.files || []).map(file => uploadImage({ buffer: file.buffer })))
+        // const images = [];
+        // const files = await Promise.all(
+        //     (req.files || []).map(file => uploadImage
+        //         ({buffer: file.buffer})
+        //     )
+        // )
 
         const product = await productModel.create({
             title,
@@ -31,9 +37,13 @@ async function createProduct(req, res) {
             stock
         });
 
-        // jesse hi ek product create hoga uske baad
-        await publishToQueue("PRODUCT_SELLER_DASHBOARD.PRODUCT_CREATED", product);
-
+        await publishToQueue("PRODUCT_SELLER_DASHBOARD.PRODUCT_CREATED", product)
+        await publishToQueue("PRODUCT_NOTIFICATION.PRODUCT_CREATED", {
+            productId: product._id,
+            sellerId: seller,
+            email: req.user.email,
+            username: req.user.username
+        })
         return res.status(201).json({
             message: "product created",
             data: product,
@@ -47,79 +57,95 @@ async function createProduct(req, res) {
     }
 }
 
+// bhot chizze create krege -> search query aaegi then sort krege etc
 async function getProducts(req, res) {
-    // req.query frontend se ata hai jab koi user apki website pr search krta hai ya filter lgata hai
-    const { q, minprice, maxprice, skip=0, limit=20, } = req.query;
+    //toh iske liye product model mei index create krna hoga 
 
-    const filter = {};
+    //aur yh saare optional hote hai  aae ya naa aae
+    const { q, minprice, maxprice, skip = 0, limit = 20 } = req.query;
+
+    const filter = {}
 
     if (q) {
-        filter.$text = { $search: q };
+        //mongodb atlas syntax
+        filter.$text = { $search: q }
     }
 
-    if(minprice) {
-        filter['price.amount'] = { ...filter['price.amount'], $gte: Number(minprice) };
+    if (minprice) {
+        filter['price.amount'] = { ...filter['price.amount'], $gte: Number(minprice) }
     }
 
-    if(maxprice) {
-        filter['price.amount'] = { ...filter['price.amount'], $lte: Number(maxprice) };
+    if (maxprice) {
+        filter['price.amount'] = { ...filter['price.amount'], $lte: Number(maxprice) }
     }
 
-    // total dekhne ke liye ui pr ki 
+    //total dekhna ki ui pr next ya previous ke liye
+    const [products, total] = await Promise.all([
+        productModel.find(filter).skip(Number(skip)).limit(Math.min(Number(limit), 20)),
+        productModel.countDocuments(filter) // Ye batayega total kitne products hain
+    ]);
 
-    const products = await productModel.find(filter).skip(Number(skip)).limit(Math.min(Number(limit),20)); //mtlb ek time pr apan 20 products hi bhejenge, chahe client jitna bhi maange, isse server overload nhi hoga
-    
-    return res.json({
-        message: "products fetched",
+    // const products = await productModel.find(filter).skip(Number(skip)).limit(Math.min(Number(limit), 20));
+
+    return res.status(200).json({
         data: products,
+        total: total, // Ye UI ke liye bohot zaruri hai
+        hasMore: total > Number(skip) + products.length // Ye batayega aur data hai ya nahi
     })
+
+
 
 }
 
 async function getProductById(req, res) {
-      const { id } = req.params;
 
+    const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid product id' });
     }
-
     const product = await productModel.findById(id);
 
     if (!product) {
-        return res.status(404).json({ message: 'Product not found' });
+        return res.status(404).json({
+            message: "product not found"
+        });
     }
 
-    return res.status(200).json({
-        data: product });
+    return res.status(200).json({ data: product });
+
 }
 
 async function updateProduct(req, res) {
+
     const { id } = req.params;
- 
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid product id' });
     }
 
     const product = await productModel.findOne({
-            _id: id,
-    });
+        _id: id
+    })
 
     if (!product) {
-        return res.status(404).json({ message: 'Product not found or you are not the seller' });
+        return res.status(404).json({
+            message: "Product not found"
+        })
     }
-
     if (product.seller.toString() !== req.user.id) {
-        return res.status(403).json({ message: 'You are not the seller of this product' });
+        return res.status(403).json({
+            message: "Forbidden: You can only update your product"
+        })
     }
+    const allowedUpdates = ['title', 'description', 'price'];
 
-    const allowUpdates = ['title', 'description', 'price'];
-    for( const key of Object.keys(req.body)) {   
-        if(allowUpdates.includes(key)) {
-            if (key === 'price' && typeof req.body.price === 'object') {  //puri values overwrite na ho isliye object hai toh ek ek krke update krega values
+    for (const key of Object.keys(req.body)) {
+        if (allowedUpdates.includes(key)) {
+            if (key === 'price' && typeof req.body.price === 'object') { // puri value overwrite na ho isliye object hai toh ek-ek krke update krega values
                 if (req.body.price.amount !== undefined) {
                     product.price.amount = Number(req.body.price.amount);
                 }
-                if (req.body.price.currency !== undefined) { 
+                if (req.body.price.currency !== undefined) {
                     product.price.currency = req.body.price.currency;
                 }
             } else {
@@ -127,13 +153,14 @@ async function updateProduct(req, res) {
             }
         }
     }
-    await product.save();
 
+    await product.save();
     return res.status(200).json({
         message: "product updated",
-        product,
+        product
     })
 }
+
 
 async function deleteProduct(req, res) {
     const { id } = req.params;
@@ -143,44 +170,91 @@ async function deleteProduct(req, res) {
     }
 
     const product = await productModel.findOne({
-        _id: id,
-    });
+        _id: id
+    })
 
     if (!product) {
-        return res.status(404).json({ message: 'Product not found or you are not the seller' });
+        return res.status(404).json({
+            message: "Product not found"
+        })
     }
 
     if (product.seller.toString() !== req.user.id) {
-        return res.status(403).json({ message: 'You are not the seller of this product' });
+        return res.status(403).json({
+            message: "Forbidden :  You can only delete your own products"
+        })
     }
 
-    await productModel.findOneAndDelete({
-        _id: id,
-    });
-
+    await productModel.findOneAndDelete({ _id: id });
     return res.status(200).json({
-        message: "product deleted",
+        message: "Product deleted"
     })
 }
 
 async function getProductsBySeller(req, res) {
-    const seller = req.user;
+    const seller = req.user
 
-    const { skip=0, limit=20 } = req.query;
+    const { skip = 0, limit = 20 } = req.query;
 
     const products = await productModel.find({ seller: seller.id }).skip(skip).limit(Math.min(limit, 20));
 
-    return res.json({
-        message: "products fetched",
-        data: products,
+    return res.status(200).json({
+        data: products
     })
 }
 
-module.exports = { 
+async function getProductsByIds(req, res) {
+    try {
+        const { ids } = req.query; // Expecting: "id1,id2,id3"
+
+        // 1. Validation: Check agar ids bheji hi nahi hain
+        if (!ids || ids.trim() === "") {
+            return res.status(400).json({
+                message: "No product IDs provided"
+            });
+        }
+
+        // 2. String ko array mein convert karo aur faltu spaces saaf karo
+        const idArray = ids.split(',').map(id => id.trim());
+
+        // 3. Validation: Check karo ki IDs valid MongoDB ObjectIds hain ya nahi
+        const isValid = idArray.every(id => mongoose.Types.ObjectId.isValid(id));
+        if (!isValid) {
+            return res.status(400).json({
+                message: "One or more Product IDs are invalid"
+            });
+        }
+
+        // 4. Database query: $in operator saare matches ek baar mein le aayega
+        const products = await productModel.find({
+            _id: { $in: idArray }
+        });
+
+        // 5. Response handling
+        if (!products || products.length === 0) {
+            return res.status(404).json({
+                message: "No products found for the given IDs"
+            });
+        }
+
+        res.status(200).json(products);
+
+    } catch (error) {
+        // 6. Global Error Catching
+        console.error("Error in getProductsByIds:", error);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
+}
+
+module.exports = {
     createProduct,
     getProducts,
     getProductById,
     updateProduct,
     deleteProduct,
-    getProductsBySeller
-};
+    getProductsBySeller,
+    getProductsByIds
+}
