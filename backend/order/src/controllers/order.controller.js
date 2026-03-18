@@ -1,57 +1,89 @@
-const orderModel = require('../models/order.model');
-const axios = require('axios');
-const { publishToQueue } = require("../broker/broker");
+const orderModel = require("../models/order.model")
+const axios = require('axios')
+const { publishToQueue } = require('../broker/broker')
+
+
+// Helper function to fetch product details from Product Service
+async function enrichOrderItems(items, token) {
+    const productIds = items.map(item => item.product.toString());
+    try {
+        const productRes = await axios.get(`http://localhost:3001/api/products/bulk`, {
+            params: { ids: productIds.join(',') },
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const productsData = productRes.data;
+
+        return items.map(item => {
+            const info = productsData.find(p => p._id === item.product.toString());
+            return {
+                ...item._doc,
+                product: info || { title: "Product Unavailable", images: [{ url: 'https://placehold.co/100' }] }
+            };
+        });
+    } catch (err) {
+        console.error("Enrichment Failed:", err.message);
+        return items; // Fallback to original items
+    }
+}
 
 async function createOrder(req, res) {
-
     const user = req.user;
-    // inter service data transfer ke time headers ka use krenge
-    const token = req.cookies?.token || req.headers?.authorization?.split(' ')[ 1 ];
+    //inter service data transfer ke time headers ka use krege 
+    //uske liye axios install krna pdega 
+    const token = req.cookies?.token || req.headers?.authorization?.split(' ')[1];
 
     try {
 
-        // fetch user cart from cart service
+        if (!req.body.shippingAddress) {
+            return res.status(400).json({ message: "Shipping address is required" });
+        }
+
+        //fetch user cart from cart service
         const cartResponse = await axios.get(`http://localhost:3002/api/cart`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         })
 
-        const products = await Promise.all(cartResponse.data.cart.items.map(async (item) => {
+        if (!cartResponse.data.cart || cartResponse.data.cart.items.length === 0) {
+            return res.status(400).json({ message: "Cart is empty" });
+        }
 
-            return (await axios.get(`http://localhost:3001/api/products/${item.productId}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            })).data.data
+        // console.log("cart response", cartResponse.data, cartResponse.data.cart.items)
 
-        }))
 
         let priceAmount = 0;
 
-        const orderItems = cartResponse.data.cart.items.map((item, index) => {
+        const orderItems = await Promise.all(cartResponse.data.cart.items.map(async (item) => {
 
+            const pId = item.productId._id || item.productId;
 
-            const product = products.find(p => p._id === item.productId)
+            const productRes = await axios.get(`http://localhost:3001/api/products/${pId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const product = productRes.data.data;
 
-            // if not in stock, does not allow order creation
+            //if not in stock, does not allow order creation
 
             if (product.stock < item.quantity) {
                 throw new Error(`Product ${product.title} is out of stock or insufficient stock`)
             }
-
             const itemTotal = product.price.amount * item.quantity;
+
             priceAmount += itemTotal;
 
             return {
-                product: item.productId,
+                product: pId,
                 quantity: item.quantity,
                 price: {
                     amount: itemTotal,
-                    currency: product.price.currency
+                    currency: product.price.currency || "INR"
                 }
             }
-        })
+        }))
+
+        // console.log("Total price amount",priceAmount);
+        // console.log(orderItems)
 
         const order = await orderModel.create({
             user: user.id,
@@ -59,8 +91,9 @@ async function createOrder(req, res) {
             status: "PENDING",
             totalPrice: {
                 amount: priceAmount,
-                currency: "INR" // assuming all products are in USD for simplicity
+                currency: "INR"
             },
+            // shippingAddress: req.body.shippingAddress
             shippingAddress: {
                 street: req.body.shippingAddress.street,
                 city: req.body.shippingAddress.city,
@@ -70,95 +103,78 @@ async function createOrder(req, res) {
             }
         })
 
-        await publishToQueue("ORDER_SELLER_DASHBOARD.ORDER_CREATED", order);
+        await publishToQueue("ORDER_SELLER_DASHBOARD.ORDER_CREATED", order)
 
-        res.status(201).json({ order })
-
-    } catch (err) {
-        res.status(500).json({ message: "Internal server error", error: err.message })
-    }
-
-}
-
-async function getMyOrders(req, res) {
-    const user = req.user;
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    try{
-        const orders = await orderModel.find({ user: user.id }).skip(skip).limit(limit).exec();
-        const totalOrders = await orderModel.countDocuments({ user: user.id });
-
-        res.status(200).json({
-            orders,
-            meta:{
-                total: totalOrders,
-                page,
-                limit
-            }
+        res.status(201).json({
+            order
         })
-    }catch(err){
+    }
+    catch (err) {
+        console.log("Error fetching cart", err)
         res.status(500).json({
-            message: "Internal Server Error",
-            error: err.message
+            message: "Internal server error ", error: err.message
         })
+    }
+
+}
+
+// GET MY ORDERS
+async function getMyOrders(req, res) {
+    try {
+        const token = req.cookies?.token || req.headers?.authorization?.split(' ')[1];
+        const orders = await orderModel.find({ user: req.user.id }).sort({ createdAt: -1 });
+
+        const enrichedOrders = await Promise.all(orders.map(async (order) => {
+            const enrichedItems = await enrichOrderItems(order.items, token);
+            return { ...order._doc, items: enrichedItems };
+        }));
+
+        res.status(200).json({ orders: enrichedOrders });
+    } catch (err) {
+        res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 }
 
+// GET ORDER BY ID
 async function getOrderById(req, res) {
-    const user = req.user;
-    const orderId = req.params.id;
-     
-    try{
-         const order = await orderModel.findById(orderId).exec();
+    try {
+        const { id } = req.params;
+        const token = req.cookies?.token || req.headers?.authorization?.split(' ')[1];
+        const order = await orderModel.findById(id);
 
-         if(!order){
-            return res.status(404).json({
-                message: "Order not found"
-            });
-         }
+        if (!order) return res.status(404).json({ message: "Order not found" });
+        if (order.user.toString() !== req.user.id) return res.status(403).json({ message: "Unauthorized" });
 
-         if(order.user.toString() !== user.id) {
-            return res.status(403).json({
-                message: "Forbidden: You do not have access to this order"
-            })
-         }
-
-         res.status(200).json({ order });
-
-    }catch(err){
-        res.status(500).json({ 
-            message: "Internal Server Error",
-            error: err.message
-        })
+        const enrichedItems = await enrichOrderItems(order.items, token);
+        res.status(200).json({ order: { ...order._doc, items: enrichedItems } });
+    } catch (err) {
+        res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 }
 
-async function cancelOrderById(req,res){
+async function cancelOrderById(req, res) {
     const user = req.user;
     const orderId = req.params.id;
 
-    try{
+    try {
         const order = await orderModel.findById(orderId);
 
-        if(!order){
+        if (!order) {
             return res.status(404).json({
-                message:"Order not found"
+                message: "Order not found"
             })
         }
 
-        if(order.user.toString() !== user.id){
+        if (order.user.toString() !== user.id) {
             return res.status(403).json({
-                message:"Forbidden you don't have access to this order"
+                message: "Forbidden you don't have access to this order"
             })
         }
-        
+
         //only pending  orders can be cancelled
-        if(order.status !== "PENDING"){
+        if (order.status !== "PENDING") {
             return res.status(409).json({
-                message:"Order cannot be cancelled at  this stage"
+                message: "Order cannot be cancelled at  this stage"
             })
         }
 
@@ -167,30 +183,37 @@ async function cancelOrderById(req,res){
         res.status(200).json({
             order
         })
-    }catch(err){
+    } catch (err) {
         console.error(err)
 
-        res.status(500).json({message:"Internal server error",error:err.message})
+        res.status(500).json({ message: "Internal server error", error: err.message })
     }
 }
 
-async function updateOrderAddress(req, res){
+async function updateOrderAddress(req, res) {
+
     const user = req.user;
     const orderId = req.params.id;
 
-    try{
+    try {
         const order = await orderModel.findById(orderId);
 
-        if(!order){
-            return res.status(404).json({ message: "Order not found" });
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found"
+            });
         }
 
-        if(order.user.toString() !== user.id){
-            return res.status(403).json({ message: "Forbidden: You do not have access to this order" })
+        if (order.user.toString() !== user.id) {
+            return res.status(403).json({
+                message: "Forbidden: You don't have  access to this order"
+            })
         }
 
-        if(order.status !== "PENDING"){
-            return res.status(409).json({ message: "Order address cannot be updated at this stage" })
+        if (order.status !== "PENDING") {
+            return res.status(409).json({
+                message: "Order address cannot be updated at this stage"
+            })
         }
 
         order.shippingAddress = {
@@ -203,18 +226,17 @@ async function updateOrderAddress(req, res){
 
         await order.save();
 
-        res.status(200).json({ order });
-        }
-        catch(err){
-            res.status(500).json({ message:"INTERNAL Server error",error:err.message });
-        }
-    }
+        res.status(200).json({
+            order
+        })
 
+    } catch (err) {
+        res.status(500).json({
+            message: "INTERNAL Server error", error: err.message
+        })
+    }
+}
 
 module.exports = {
-    createOrder,
-    getMyOrders,
-    getOrderById,
-    cancelOrderById,
-    updateOrderAddress
-}
+    createOrder, getMyOrders, getOrderById, cancelOrderById, updateOrderAddress
+};

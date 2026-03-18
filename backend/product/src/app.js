@@ -15,7 +15,7 @@ app.use(cors({
 }));
 
 
-//health check route 
+// health check route 
 app.get('/',(req,res)=>{
     res.status(200).json({
         message:"Product Service is running"

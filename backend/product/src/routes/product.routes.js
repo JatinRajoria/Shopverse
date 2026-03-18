@@ -14,6 +14,8 @@ router.post('/', createAuthMiddleware(["admin", "seller"]), upload.array('images
 // GET /api/products
 router.get('/', productController.getProducts);
 
+//last for cart 
+router.get('/bulk', productController.getProductsByIds);
 
 //  PATCH /api/products/:id
 router.patch('/:id', createAuthMiddleware(["seller"]) , productController.updateProduct);
