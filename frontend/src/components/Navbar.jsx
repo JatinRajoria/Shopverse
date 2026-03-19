@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, NavLink } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, BotMessageSquare, LogOut, UserCircle, Menu, X, ChevronDown } from 'lucide-react'; // Lucide Icons
+import { LayoutDashboard, ShoppingBag, BotMessageSquare, LogOut, UserCircle, Menu, X, ChevronDown, ShoppingCart } from 'lucide-react'; // Lucide Icons
 import { logoutUser } from '../features/auth/authSlice'; // Maan raha hoon logout action ready hai
 import LogoutModal from './modals/LogoutModal.jsx'
 const Navbar = () => {
@@ -37,7 +37,10 @@ const Navbar = () => {
         { name: 'Home', path: '/', icon: LayoutDashboard },
         { name: 'Products', path: '/products', icon: ShoppingBag },
         { name: 'AI Buddy', path: '/ai-buddy', icon: BotMessageSquare },
-        { name: 'Cart', path: '/cart', icon: LayoutDashboard }, // Placeholder icon
+        ...(user?.role === 'seller'
+            ? [{ name: 'Dashboard', path: '/seller-dashboard', icon: LayoutDashboard }]
+            : [{ name: 'Cart', path: '/cart', icon: ShoppingCart }]
+        ), // Placeholder icon
         { name: 'Orders', path: '/orders', icon: LayoutDashboard }, // Placeholder icon
     ];
 

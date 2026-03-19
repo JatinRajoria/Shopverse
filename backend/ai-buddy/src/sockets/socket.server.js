@@ -1,67 +1,85 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
-// token cookies me atta hai isliye
 const cookie = require('cookie');
-const agent = require("../agent/agent");
+const agent = require('../agent/agent');
 
 async function initSocketServer(httpServer) {
     const io = new Server(httpServer, {
-        // path: "/api/socket/socket.io/",
-    })
+        // path: '/api/socket/socket.io/'
+        cors: {
+            origin: "http://localhost:5173", // Apne frontend ka URL dalo
+            methods: ["GET", "POST"],
+            credentials: true
+        },
+        transports: ['websocket'] // WebSocket ko force karna, polling avoid karne ke liye
+    });
 
-    // middleware
+    // Middleware: Auth check
     io.use((socket, next) => {
-        const cookies = socket.handshake.headers?.cookie;
+        try {
+            const cookies = socket.handshake.headers?.cookie;
+            const { token } = cookies ? cookie.parse(cookies) : {};
 
-        // token ko cookie me se nikal rhe honge
-        const { token } = cookies ? cookie.parse(cookies) : {};
+            if (!token) return next(new Error("Authentication error: No token"));
 
-        if(!token){
-            return next(new Error('Token not provided'));
-        }
-
-        try{
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
             socket.user = decoded;
             socket.token = token;
-
             next();
+        } catch (err) {
+            next(new Error('Authentication error: Invalid token'));
         }
-        catch(err){
-            next(new Error("Invalid token"));
-        }
-    })
+    });
 
     io.on('connection', (socket) => {
+        console.log(`User connected: ${socket.user.id || 'anonymous'}`);
 
-        // security ke liye ek aur chiz console krwa rhe hai
-        console.log(socket.user, socket.token);
+        socket.on('message', async (data) => {
+            try {
+                console.log("Received message:", data);
 
-        // console.log("A user connected");
-
-        socket.on('message', async(data) => {
-            // console.log("Recieved Message: ", data);
-
-            const agentResponse = await agent.invoke({
-                messages: [
-                    {
-                        role: "user",
-                        content: data
+                // 1. Agent call ko try-catch mein wrap karna zaroori hai
+                const agentResponse = await agent.invoke({
+                    messages: [
+                        {
+                            role: "user",
+                            content: data
+                        }
+                    ]
+                }, {
+                    configurable: { thread_id: socket.id }, // Memory handle karne ke liye (Future use)
+                    metadata: {
+                        token: socket.token
                     }
-                ]
-            },{
-                metadata: {
-                    token: socket.token
+                });
+
+                console.log("Agent responded successfully");
+
+                const lastMessage = agentResponse.messages[agentResponse.messages.length - 1];
+
+                // 2. Fallback agar content empty ho (tools call ke baad kabhi kabhi hota hai)
+                const finalContent = lastMessage.content || "I've processed your request.";
+
+                socket.emit('message', finalContent);
+
+            } catch (error) {
+                // 3. Error Handling: Agar quota hit ho ya network issue ho
+                console.error("Agent Invoke Error:", error.message);
+
+                let userFriendlyError = "Sorry, I'm a bit overwhelmed. Please try again in a minute.";
+
+                if (error.status === 429) {
+                    userFriendlyError = "Daily limit reached or too many requests. Please wait a bit.";
                 }
-            })
-            // console.log("Agent Response: ", agentResponse);
 
-            const lastMessage = agentResponse.messages[ agentResponse.messages.length - 1 ]
+                socket.emit('error', { message: userFriendlyError });
+            }
+        });
 
-            socket.emit('message', lastMessage.content)
-        })
-    })
+        socket.on('disconnect', () => {
+            console.log("User disconnected");
+        });
+    });
 }
 
 module.exports = { initSocketServer };

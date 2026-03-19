@@ -1,63 +1,71 @@
 const { StateGraph, MessagesAnnotation } = require("@langchain/langgraph");
-const{ ChatGoogleGenerativeAI } = require('@langchain/google-genai');
-const { ToolMessage, AIMessage, HumanMessage } = require("@langchain/core/messages");
-const tools = require("./tools");
+const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
+const { ToolMessage } = require("@langchain/core/messages");
+const tools = require('./tools');
 
 const model = new ChatGoogleGenerativeAI({
     model: "gemini-2.5-flash",
-    temperature: 0.5,
-    apiKey : process.env.GEMINI_API_KEY
-})
+    temperature: 0, 
+    apiKey: process.env.GEMINI_API_KEY,
+    maxRetries: 2,
+});
 
 const graph = new StateGraph(MessagesAnnotation)
-// state rhti hai ki aap jo bhi data rhega vo use kr skte ho
-.addNode("tools", async(state, config) => { 
-    const lastMessage = state.messages[ state.messages.length - 1 ]
+    .addNode("tools", async (state, config) => {
+        const lastMessage = state.messages[state.messages.length - 1];
+        const toolCalls = lastMessage.tool_calls || [];
 
-    const toolsCall = lastMessage.tool_calls
-
-    const toolCallResults = await Promise.all(toolsCall.map(async(call) => {
-            const tool = tools[ call.name ]
-            if(!tool){
-                throw new Error(`Tool ${call.name} not found`)
+        const toolCallResults = await Promise.all(toolCalls.map(async (call) => {
+            // Humne tools.js se pure objects export kiye hain (searchProduct, addProductToCart)
+            const tool = tools[call.name];
+            
+            if (!tool) {
+                return new ToolMessage({
+                    content: `Error: Tool ${call.name} not found`,
+                    tool_call_id: call.id,
+                });
             }
-            const toolInput = call.args
 
-            console.log("Invoking tool:", call.name, "with input:", call, config)
+            console.log("Executing Tool:", call.name);
 
-            const toolResult = await tool.func({ ...toolInput, token: config.metadata.token })
+            // IMPORTANT: LangChain tools ko call karne ka sahi tarika unka invoke method hai
+            // ya fir seedha func ko context ke saath call karna
+            try {
+                const toolResult = await tool.invoke({ ...call.args }, config);
 
-            return new ToolMessage({ content: toolResult, name: call.name })
+                return new ToolMessage({
+                    content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult),
+                    tool_call_id: call.id,
+                    name: call.name
+                });
+            } catch (err) {
+                return new ToolMessage({
+                    content: `Tool Error: ${err.message}`,
+                    tool_call_id: call.id,
+                });
+            }
+        }));
+
+        return { messages: toolCallResults }; 
+    })
+    .addNode("chat", async (state, config) => {
+        // Saare tools ko array mein convert karke pass karna
+        const toolList = Object.values(tools); 
+        const response = await model.invoke(state.messages, {
+            tools: toolList,
+        });
+
+        return { messages: [response] };
+            })
+    .addEdge("__start__", "chat")
+    .addConditionalEdges("chat", (state) => {
+        const lastMessage = state.messages[state.messages.length - 1];
+        if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+            return "tools";
         }
-    ))
-    state.messages.push(...toolCallResults);
+        return "__end__";
+    })
+    .addEdge("tools", "chat");
 
-    return state;
-})
-.addNode("chat", async(state, config) => {
-    const respone = await model.invoke(state.messages, {tools:[ tools.searchProduct, tools.addProductToCart ]})
-
-    state.messages.push(new AIMessage({ content: respone.text, tool_calls: respone.tool_calls }))
-
-    return state
-})
-// edges add krne ke liye
-.addEdge("__start__", "chat")
-.addConditionalEdges("chat", async(state) => {
-    const lastMessage = state.messages[ state.messages.length - 1 ]
-    
-    if(lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
-        return "tools"
-    }else{
-        return "__end__"
-    }
-})
-.addEdge("tools", "chat")
-
-const agent = graph.compile()
-
-
-module.exports = agent
-
-
-// Aksar developers tools node ko upar isliye likhte hain kyunki chat node ko kabhi-kabhi tools ki list ki zaroorat padti hai (unhe "Bind" karne ke liye).
+const agent = graph.compile();
+module.exports = agent;
