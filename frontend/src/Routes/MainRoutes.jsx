@@ -13,6 +13,8 @@ import ProfileSettings from '../pages/ProfileSettings';
 import SellerDashboard from '../pages/SellerDashboard';
 import ShopVerseAI from '../pages/ShopverseAI';
 import CreateProduct from '../pages/CreateProduct';
+import PageNotFound from '../pages/PageNotFound';
+
 
 const MainRoutes = () => {
   return (
@@ -40,8 +42,8 @@ const MainRoutes = () => {
 
       </Route>
 
-      {/* 404 Page (Optional) */}
-      <Route path="*" element={<div className="text-center mt-20">404 - Page Not Found</div>} />
+       {/* 404 Page (Optional) */}
+      <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
 };
