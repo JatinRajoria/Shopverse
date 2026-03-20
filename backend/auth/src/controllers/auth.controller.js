@@ -59,7 +59,7 @@ async function registerUser(req, res) {
 
         res.cookie('token', token, {
             httpOnly: true,
-            secure: true, // client side js hoti hai vo cookies ko access nahi kr paegi only server hi kr skta hai .....
+            secure: true, // client side js hoti hai vo cookies ko access nahi kr paegi only server hi kr skta hai
             maxAge: 24 * 60 * 60 * 1000 //1 day
         })
 
@@ -87,7 +87,7 @@ async function loginUser(req, res) {
     try {
         const { username, email, password } = req.body;
 
-        const user = await userModel.findOne({ $or: [{ username }, { email }] }).select('+password'); //login krte time password bhi chahiye hota hai compare krne ke liye toh select +password krna pdega kyu ki usermodel mei select false krdiey hai password pr;
+        const user = await userModel.findOne({ $or: [{ username }, { email }] }).select('+password'); //login krte time password bhi chahiye hota hai compare krne ke liye toh select +password krna pdega kyu ki usermodel mei select false krdiey hai password pr
 
         if (!user) {
             return res.status(401).json({
@@ -148,7 +148,7 @@ async function logoutUser(req, res) {
 
     if (token) {
         await redis.set(`blacklist:${token}`, 'true', 'EX', 24 * 60 * 60); //token ko redis mei blacklist krdege aur uska expiry time 1 day rkhdege taki vo token valid na rhe logout krne ke baad
-        // JWT tokens ko "cancel" karna mushkil hota hai kyunki wo "stateless" hote hain. Iska hal hai Blacklisting
+        // JWT tokens ko "cancel" karna mushkil hota hai kyunki wo stateless hote hain. Iska hal hai Blacklisting
     }
 
     res.clearCookie('token', {
@@ -190,7 +190,7 @@ async function addUserAddress(req, res) {
             return res.status(400).json({ message: "Street, City, and Pincode are required" });
         }
 
-        // Agar ye default address hai, toh baaki sab ko false karna padega (Logic fix)
+        // Agar ye default address hai, toh baaki sab ko false karna padega
         if (isDefault) {
             await userModel.updateOne(
                 { _id: id },
@@ -229,7 +229,7 @@ async function deleteUserAddress(req, res) {
         const id = req.user.id;
         const { addressId } = req.params;
 
-        // Pehle check karo address format sahi hai ya nahi
+        // Pehle check karenge address format sahi hai ya nahi
         const user = await userModel.findOneAndUpdate(
             { _id: id },
             { $pull: { addresses: { _id: addressId } } },

@@ -5,7 +5,7 @@ const setListeners = require("../src/broker/listeners");
 const app = express();
 
 connect().then(() => {
-    // jab apan successfully connect ho jayenge rabbitMQ tab setListeners chlenge
+    // jab apan successfully connect ho jayenge rabbitMQ tab setListeners chlega
     setListeners();
 })
 

@@ -4,9 +4,9 @@ const axios = require('axios');
 
 // 1. Search Product Tool
 const searchProduct = tool(
-    async ({ query }, config) => { // Token yahan config se aayega, AI se nahi
+    async ({ query }, config) => { // Token yahan config se aayega, AI se nhi
         try {
-            const token = config.metadata.token; // Agent metadata se token nikalna
+            const token = config.metadata.token; // Agent metadata se token nikalenge
             
             const response = await axios.get(`http://localhost:3001/api/products?q=${query}`, {
                 headers: { Authorization: `Bearer ${token}` },

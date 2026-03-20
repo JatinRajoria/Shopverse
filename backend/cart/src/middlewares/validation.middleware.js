@@ -13,7 +13,7 @@ const validateAddItemToCart = [
     body('productId')
         .isString()
         .withMessage('Product ID must be a string')
-        .custom(value => mongoose.Types.ObjectId.isValid(value)) //check kr rhe hai ki mongoose id ka formate toh valid hai na 
+        .custom(value => mongoose.Types.ObjectId.isValid(value)) //check kr rhe hai ki mongoose id ka format toh valid hai na 
         .withMessage("Invalid Product ID format"),
     
     body('qty')

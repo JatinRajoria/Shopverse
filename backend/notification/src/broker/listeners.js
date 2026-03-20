@@ -42,7 +42,7 @@ module.exports = function () {
   });
 
 
-//   payment jab apki failed ho jaye
+//   payment jab apni failed ho jaye
   subscribeToQueue("PAYMENT_NOTIFICATION.PAYMENT_FAILED", async (data) => {
     const emailHTMLTemplate = `
         <h1>Payment Failed</h1>

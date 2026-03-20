@@ -6,7 +6,7 @@ async function getCart(req, res) {
     try {
         const user = req.user;
 
-        // 1. Cart Service ki apni DB se cart dhoondo
+        // 1. Cart Service ki apni DB se cart dhoondenge
         let cart = await cartModel.findOne({ user: user.id });
 
         if (!cart || cart.items.length === 0) {
@@ -19,15 +19,15 @@ async function getCart(req, res) {
         // 2. Sari Product IDs nikalo
         const productIds = cart.items.map(item => item.productId.toString());
 
-        // 3. Product Service ko call karo details ke liye (Server-to-Server)
-        // Note: Yahan wahi port use karo jo Product Service ka hai
+        // 3. Product Service ko call karenge details ke liye (Server-to-Server)
+        // Note: Yahan wahi port use karenge jo Product Service ka hai
         const productResponse = await axios.get(`http://localhost:3001/api/products/bulk`, {
             params: { ids: productIds.join(',') }
         });
 
         const productsData = productResponse.data;
 
-        // 4. Data Merge Karo: Cart items + Product details
+        // 4. Data Merge Karenge: Cart items + Product details
         const enrichedItems = cart.items.map(cartItem => {
             const productInfo = productsData.find(p => p._id.toString() === cartItem.productId.toString());
             return {
@@ -37,7 +37,7 @@ async function getCart(req, res) {
             };
         });
 
-        // 5. Totals Calculate karo
+        // 5. Totals Calculate karenge
         const subtotal = enrichedItems.reduce((acc, item) => {
             return acc + ((item.productId?.price?.amount || 0) * item.quantity);
         }, 0);
@@ -70,13 +70,13 @@ async function addItemToCart(req, res) {
             return res.status(400).json({ message: "Valid Product ID and Quantity are required" });
         }
 
-        // 2. Cart dhoondo ya naya banao
+        // 2. Cart dhoondenge ya naya banayenge
         let cart = await cartModel.findOne({ user: user.id });
         if (!cart) {
             cart = new cartModel({ user: user.id, items: [] });
         }
 
-        // 3. Logic: Add or Update Quantity
+        // 3. Add or Update Quantity
         const existingItemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
 
         if (existingItemIndex >= 0) {
@@ -87,7 +87,7 @@ async function addItemToCart(req, res) {
 
         await cart.save();
 
-        // 4. ENRICHMENT: Product Service se details mangwao
+        // 4. ENRICHMENT: Product Service se details mangwayenge
         // Ye step zaroori hai taaki Redux state mein turant Title/Price dikhe
         const productIds = cart.items.map(item => item.productId.toString());
         
@@ -139,7 +139,7 @@ async function updateItemQuantity(req, res) {
             return res.status(400).json({ message: "Quantity must be at least 1" });
         }
 
-        // 2. Database Call: Cart dhoondo
+        // 2. Database Call: Cart dhoondenge
         const cart = await cartModel.findOne({ user: user.id });
         if (!cart) {
             return res.status(404).json({ message: 'Cart not found' });

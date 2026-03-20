@@ -13,7 +13,7 @@ app.use(cors({
     credentials: true
 }));
 
-//ALB ko pta rhe ki konsa application chl rha hai ya nahi toh isliiye yh health check route create kiya 
+//ALB ko pta rhe hai ki konsa application chl rha hai ya nahi toh isliiye yh health check route create kiya 
 app.get('/',(req,res)=>{
     res.status(200).json({
         message:"Payment Service is running"

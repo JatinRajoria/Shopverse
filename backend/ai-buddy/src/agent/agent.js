@@ -49,7 +49,7 @@ const graph = new StateGraph(MessagesAnnotation)
         return { messages: toolCallResults }; 
     })
     .addNode("chat", async (state, config) => {
-        // Saare tools ko array mein convert karke pass karna
+        // Saare tools ko array mein convert karke pass krenge
         const toolList = Object.values(tools); 
         const response = await model.invoke(state.messages, {
             tools: toolList,

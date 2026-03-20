@@ -17,6 +17,9 @@ router.get('/', productController.getProducts);
 //last for cart 
 router.get('/bulk', productController.getProductsByIds);
 
+// POST /api/products/validate-stock
+router.post('/validate-stock', productController.validateStock);
+
 //  PATCH /api/products/:id
 router.patch('/:id', createAuthMiddleware(["seller"]) , productController.updateProduct);
 

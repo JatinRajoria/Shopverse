@@ -3,7 +3,7 @@ const { uploadImage } = require('../services/imagekit.service')
 const mongoose = require('mongoose');
 const { publishToQueue } = require('../broker/broker')
 
-//accepts multipart/form-data with fields...
+//accepts multipart/form-data with fields
 async function createProduct(req, res) {
     try {
         const { title, description, priceAmount, priceCurrency = 'INR', stock } = req.body
@@ -25,8 +25,7 @@ async function createProduct(req, res) {
         // const files = await Promise.all(
         //     (req.files || []).map(file => uploadImage
         //         ({buffer: file.buffer})
-        //     )
-        // )
+        //
 
         const product = await productModel.create({
             title,
@@ -205,7 +204,7 @@ async function getProductsBySeller(req, res) {
 
 async function getProductsByIds(req, res) {
     try {
-        const { ids } = req.query; // Expecting: "id1,id2,id3"
+        const { ids } = req.query; // Expecting: id1,id2,id3
 
         // 1. Validation: Check agar ids bheji hi nahi hain
         if (!ids || ids.trim() === "") {
@@ -249,6 +248,55 @@ async function getProductsByIds(req, res) {
     }
 }
 
+// Ye function tab kaam aayega jab hume check karna ho ki stock hai ya nahi
+async function checkAndReduceStock(items) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        for (const item of items) {
+            const product = await productModel.findById(item.product).session(session);
+            
+            if (!product) throw new Error(`Product not found: ${item.product}`);
+            
+            if (product.stock < item.quantity) {
+                throw new Error(`Insufficient stock for ${product.title}. Only ${product.stock} left.`);
+            }
+
+            product.stock -= item.quantity;
+            await product.save({ session });
+            
+            // Sync to Seller Dashboard
+            await publishToQueue("PRODUCT_SELLER_DASHBOARD.PRODUCT_UPDATED", product);
+        }
+        await session.commitTransaction();
+        return { success: true };
+    } catch (error) {
+        await session.abortTransaction();
+        return { success: false, message: error.message };
+    } finally {
+        session.endSession();
+    }
+}
+
+
+async function validateStock(req, res) {
+    try {
+        const { items } = req.body;
+        for (const item of items) {
+            const product = await productModel.findById(item.product);
+            if (!product || product.stock < item.quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Only ${product ? product.stock : 0} left for ${product ? product.title : 'item'}`
+                });
+            }
+        }
+        res.status(200).json({ success: true });
+    } catch (err) {
+        res.status(500).json({ message: "Stock check failed" });
+    }
+}
+
 module.exports = {
     createProduct,
     getProducts,
@@ -256,5 +304,7 @@ module.exports = {
     updateProduct,
     deleteProduct,
     getProductsBySeller,
-    getProductsByIds
+    getProductsByIds,
+    checkAndReduceStock,
+    validateStock
 }

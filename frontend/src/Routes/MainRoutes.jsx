@@ -12,6 +12,7 @@ import OrderDetails from '../pages/OrderDetails';
 import ProfileSettings from '../pages/ProfileSettings';
 import SellerDashboard from '../pages/SellerDashboard';
 import ShopVerseAI from '../pages/ShopverseAI';
+import CreateProduct from '../pages/CreateProduct';
 
 const MainRoutes = () => {
   return (
@@ -34,7 +35,9 @@ const MainRoutes = () => {
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['seller']} />}>
-        <Route path="/seller-dashboard" element={<SellerDashboard />} />
+        <Route path="/seller/dashboard" element={<SellerDashboard />} />
+        <Route path="/seller/create-product" element={<CreateProduct />} />
+
       </Route>
 
       {/* 404 Page (Optional) */}

@@ -66,7 +66,7 @@ async function  verifyPayment(req, res) {
             return res.status(400).json({ message: "Invalid signature" });
         }
 
-        // status pending lgana jruri hai kyu ki same payment se vran baar baar order ko pass kr skte ho
+        // status pending lgana jruri hai kyu ki same payment se vrna baar baar order ko pass kr skte ho
         const payment = await paymentModel.findOne({ razorpayOrderId, status: "PENDING" });
 
         if(!payment){
