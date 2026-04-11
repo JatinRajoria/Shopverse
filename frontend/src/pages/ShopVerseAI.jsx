@@ -5,7 +5,7 @@ import { addMessage, setAiTyping } from '../features/chat/chatSlice';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 
-const SOCKET_URL = 'http://localhost:3005'; // Backend port check kar lena 3005 hi hai na?
+const SOCKET_URL = import.meta.env.VITE_AI_BUDDY_URL || 'http://localhost:3005'; // 
 
 const ShopVerseAI = () => {
     const dispatch = useDispatch();
@@ -13,49 +13,57 @@ const ShopVerseAI = () => {
     const [userInput, setUserInput] = useState('');
     const socketRef = useRef();
     const messagesEndRef = useRef(null);
+    const { user } = useSelector(state => state.auth);
+    const token = user?.token;
 
-  useEffect(() => {
-    // 1. Connection Options: Polling ko disable kar do, seedha websocket use karo
-    const connectionOptions = {
-        withCredentials: true,
-        transports: ['websocket'], // Ye sabse important hai warning hatane ke liye
-        reconnection: true,
-        reconnectionAttempts: 3,
-        timeout: 5000,
-    };
+    useEffect(() => {
 
-    // 2. Initialize only if not exists
-    if (!socketRef.current) {
-        socketRef.current = io(SOCKET_URL, connectionOptions);
-    }
+        if (!token) return;
 
-    const socket = socketRef.current;
+        // 1. Connection Options: Polling ko disable kar do, seedha websocket use karo
+        const connectionOptions = {
+            auth: {
+                token: token // <--- Ye backend ke socket.handshake.auth mein jayega
+            },
+            withCredentials: true,
+            transports: ['websocket', 'polling'], // Ye sabse important hai warning hatane ke liye
+            reconnection: true,
+            reconnectionAttempts: 3,
+            timeout: 5000,
+        };
 
-    // 3. Status Check (Debug ke liye)
-    socket.on('connect', () => console.log("✅ AI Socket Connected:", socket.id));
-    socket.on('connect_error', (err) => console.log("❌ Connection Error:", err.message));
-
-    socket.on('message', (data) => {
-        dispatch(setAiTyping(false));
-        dispatch(addMessage({ sender: 'ai', text: data }));
-    });
-
-    socket.on('error', (err) => {
-        dispatch(setAiTyping(false));
-        toast.error(err.message || "AI Error");
-    });
-
-    // 4. CLEANUP: Sirf listeners hatao, disconnect mat karo reload par agar error aa raha hai
-    return () => {
-        if (socket) {
-            socket.off('message');
-            socket.off('error');
-            socket.off('connect');
-            socket.off('connect_error');
-            // socket.disconnect(); // Ise comment out karke dekho agar reload error persist kare
+        // 2. Initialize only if not exists
+        if (!socketRef.current) {
+            socketRef.current = io(SOCKET_URL, connectionOptions);
         }
-    };
-}, [dispatch]);
+
+        const socket = socketRef.current;
+
+        // 3. Status Check (Debug ke liye)
+        socket.on('connect', () => console.log("✅ AI Socket Connected:", socket.id));
+        socket.on('connect_error', (err) => console.log("❌ Connection Error:", err.message));
+
+        socket.on('message', (data) => {
+            dispatch(setAiTyping(false));
+            dispatch(addMessage({ sender: 'ai', text: data }));
+        });
+
+        socket.on('error', (err) => {
+            dispatch(setAiTyping(false));
+            toast.error(err.message || "AI Error");
+        });
+
+        // 4. CLEANUP: Sirf listeners hatao, disconnect mat karo reload par agar error aa raha hai
+        return () => {
+            if (socket) {
+                socket.off('message');
+                socket.off('error');
+                socket.off('connect');
+                socket.off('connect_error');
+                socket.disconnect(); // Ise comment out kiya hai agar reload error persist hua toh
+            }
+        };
+    }, [dispatch,token]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -87,7 +95,7 @@ const ShopVerseAI = () => {
                             <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase italic">ShopVerse AI</h2>
                             <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-2">Personal Shopping Agent</p>
                             <p className="text-gray-500 text-sm mt-6 leading-relaxed">
-                                I can find products, track orders, and even add items to your cart. Just ask!
+                                I can find products and even add items to your cart. Just ask!
                             </p>
                         </div>
                     </div>
@@ -107,8 +115,8 @@ const ShopVerseAI = () => {
                                 {messages.map((msg, index) => (
                                     <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`max-w-[85%] md:max-w-[70%] p-5 md:p-7 rounded-[2rem] ${msg.sender === 'user'
-                                                ? 'bg-gray-900 text-white rounded-tr-none shadow-xl'
-                                                : 'bg-gray-50 text-gray-800 rounded-tl-none border border-gray-100'
+                                            ? 'bg-gray-900 text-white rounded-tr-none shadow-xl'
+                                            : 'bg-gray-50 text-gray-800 rounded-tl-none border border-gray-100'
                                             }`}>
                                             <p className="text-sm md:text-base font-bold leading-relaxed">{msg.text}</p>
                                         </div>
