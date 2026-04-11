@@ -202,6 +202,7 @@ async function getProductsBySeller(req, res) {
     })
 }
 
+// ye cart ke liye hai, jab user cart mein jayega toh usko products ke details chahiye honge, toh wo ids bhejega aur hume unke details de dene hain. Toh iske liye hum ek naya endpoint banaenge jisme user ids bhejega aur hume unke details de dene hain.
 async function getProductsByIds(req, res) {
     try {
         const { ids } = req.query; // Expecting: id1,id2,id3
@@ -248,6 +249,7 @@ async function getProductsByIds(req, res) {
     }
 }
 
+// Jab koi user "Checkout" ya "Order" karta hai, tab ye function check karta hai ki dukan mein maal (Stock) hai ya nahi
 // Ye function tab kaam aayega jab hume check karna ho ki stock hai ya nahi
 async function checkAndReduceStock(items) {
     const session = await mongoose.startSession();

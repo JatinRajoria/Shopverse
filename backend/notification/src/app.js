@@ -1,19 +1,20 @@
-const express = require('express');
-const { connect } = require('./broker/broker');
-const setListeners = require("../src/broker/listeners");
+const express = require("express")
+const {connect} = require('./broker/broker')
+const setListeners = require("./broker/listeners")
 
 const app = express();
 
-connect().then(() => {
-    // jab apan successfully connect ho jayenge rabbitMQ tab setListeners chlega
+connect().then(()=>{
     setListeners();
+});
+//rabbit mq do baar run ho rha tha toh ese likhege 
+
+app.get('/',(req,res)=>{
+    res.status(200).json({
+        message:"Notification Service is running"
+    })
 })
 
-// ye health check route hai
-app.get("/", (req,res) => {
-    res.send("Notification service is up and running");
-})
 
 
 module.exports = app;
-

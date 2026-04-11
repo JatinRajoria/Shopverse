@@ -1,6 +1,7 @@
 const cartModel = require("../models/cart.model")
 const axios = require('axios');
 
+const BASE_URL_1 = process.env.NODE_ENV === "production" ? "https://xyz-product.onrender.com" : "http://localhost:3001"
 
 async function getCart(req, res) {
     try {
@@ -21,7 +22,7 @@ async function getCart(req, res) {
 
         // 3. Product Service ko call karenge details ke liye (Server-to-Server)
         // Note: Yahan wahi port use karenge jo Product Service ka hai
-        const productResponse = await axios.get(`http://localhost:3001/api/products/bulk`, {
+        const productResponse = await axios.get(`${BASE_URL_1}/api/products/bulk`, {
             params: { ids: productIds.join(',') }
         });
 
@@ -92,7 +93,7 @@ async function addItemToCart(req, res) {
         const productIds = cart.items.map(item => item.productId.toString());
         
         try {
-            const productResponse = await axios.get(`http://localhost:3001/api/products/bulk`, {
+            const productResponse = await axios.get(`${BASE_URL_1}/api/products/bulk`, {
                 params: { ids: productIds.join(',') }
             });
             
@@ -161,7 +162,7 @@ async function updateItemQuantity(req, res) {
 
         try {
             // Server-to-Server call with Timeout handling
-            const productResponse = await axios.get(`http://localhost:3001/api/products/bulk`, {
+            const productResponse = await axios.get(`${BASE_URL_1}/api/products/bulk`, {
                 params: { ids: productIds.join(',') },
                 timeout: 5000 // 5 seconds mein reply nahi aaya toh cancel
             });
@@ -240,7 +241,7 @@ async function removeItemFromCart(req, res) {
         if (productIds.length > 0) {
             try {
                 // Server-to-Server call with a timeout
-                const productResponse = await axios.get(`http://localhost:3001/api/products/bulk`, {
+                const productResponse = await axios.get(`${BASE_URL_1}/api/products/bulk`, {
                     params: { ids: productIds.join(',') },
                     timeout: 5000 // 5 seconds wait time
                 });

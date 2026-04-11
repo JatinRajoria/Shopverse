@@ -34,6 +34,7 @@ const productSchema = new mongoose.Schema({
     },
 });
 
+// ye search ke liye text index create kr raha hai title aur description fields pe
 productSchema.index({ title: 'text', description: 'text' });
 
 module.exports = mongoose.model('Product', productSchema);

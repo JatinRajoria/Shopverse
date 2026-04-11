@@ -1,6 +1,12 @@
-const express = require('express');
+const  express = require('express')
 
 const app = express();
-app.use(express.json());
+
+// health check route
+app.get('/',(req,res)=>{
+    res.status(200).json({
+        message:"AI Service is running"
+    })
+})
 
 module.exports = app;

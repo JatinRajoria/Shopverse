@@ -1,19 +1,32 @@
-const express = require('express');
-const cookieParser = require('cookie-parser');
-const orderRoutes = require('./routes/order.routes');
-
+const express = require('express')
+const cookieParser = require('cookie-parser')
+const orderRoutes = require('./routes/order.routes')
+const cors = require('cors')
 const app = express();
-const cors = require('cors');
+const allowedOrigins = [
+
+    "http://localhost:5173",
+    "https://xyz-store.netlify.app"
+
+];
 
 app.use(express.json());
 app.use(cookieParser());
 
-// Backend Service me
+//  Backend Service mein 
 app.use(cors({
-    origin: 'http://localhost:5173', //React URL
+    origin: allowedOrigins,
     credentials: true
 }));
 
-app.use('/api/orders', orderRoutes);
+
+//health check route 
+app.get('/',(req,res)=>{
+    res.status(200).json({
+        message:"Order Service is running"
+    })
+})
+
+app.use('/api/orders',orderRoutes);
 
 module.exports = app;

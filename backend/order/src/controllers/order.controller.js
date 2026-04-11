@@ -1,13 +1,15 @@
 const orderModel = require("../models/order.model")
 const axios = require('axios')
 const { publishToQueue } = require('../broker/broker')
-
+const BASE_URL_1 = process.env.NODE_ENV === "production" ? "https://xyz-product.onrender.com" : "http://localhost:3001"
+const BASE_URL_2 = process.env.NODE_ENV === "production" ? "https://xyz-cart.onrender.com" : "http://localhost:3002"
+const BASE_URL_4 = process.env.NODE_ENV === "production" ? "https://xyz-payment.onrender.com" : "http://localhost:3004"
 
 // Helper function to fetch product details from Product Service
 async function enrichOrderItems(items, token) {
     const productIds = items.map(item => item.product.toString());
     try {
-        const productRes = await axios.get(`http://localhost:3001/api/products/bulk`, {
+        const productRes = await axios.get(`${BASE_URL_1}/api/products/bulk`, {
             params: { ids: productIds.join(',') },
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -40,7 +42,7 @@ async function createOrder(req, res) {
         }
 
         //fetch user cart from cart service
-        const cartResponse = await axios.get(`http://localhost:3002/api/cart`, {
+        const cartResponse = await axios.get(`${BASE_URL_2}/api/cart`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -59,7 +61,7 @@ async function createOrder(req, res) {
 
             const pId = item.productId._id || item.productId;
 
-            const productRes = await axios.get(`http://localhost:3001/api/products/${pId}`, {
+            const productRes = await axios.get(`${BASE_URL_1}/api/products/${pId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const product = productRes.data.data;
@@ -87,7 +89,7 @@ async function createOrder(req, res) {
         // console.log("Total price amount",priceAmount);
         // console.log(orderItems)
         try {
-            await axios.get('http://localhost:3004/api/payments/health', { timeout: 2000 });
+            await axios.get(`${BASE_URL_4}/api/payments/health`, { timeout: 2000 });
         } catch (paymentErr) {
             // Agar payment service down hai, toh yahi se error bhej do
             return res.status(503).json({
@@ -114,9 +116,9 @@ async function createOrder(req, res) {
             }
         })
         // 1. Seller Dashboard sync (Revenue/Sales ke liye)
-        await publishToQueue("ORDER_SELLER_DASHBOARD.ORDER_CREATED", order)
+        // await publishToQueue("ORDER_SELLER_DASHBOARD.ORDER_CREATED", order)
         // 2. YE ADD isliye kiya  kyu ki Product Service sync (Stock kam karne ke liye)
-        await publishToQueue("ORDER_PRODUCT_SERVICE.ORDER_CREATED", order);
+        // await publishToQueue("ORDER_PRODUCT_SERVICE.ORDER_CREATED", order);
 
         await Promise.all([
             // 1. Seller Dashboard sync (Revenue/Sales ke liye)

@@ -1,19 +1,36 @@
-const express = require('express');
-const cookieParser = require('cookie-parser');
+const express = require('express')
+const cookieParser = require('cookie-parser')
+const  authRoute = require('./routes/auth.route')
 
-const app = express();
 const cors = require('cors');
 
+const allowedOrigins = [
+
+    "http://localhost:5173",
+    "https://xyz-store.netlify.app"
+
+];
+
+const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+
+// Backend Service mein 
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: allowedOrigins, 
     credentials: true
 }));
 
-// Routes
-const authRoutes = require('./routes/auth.routes');
-app.use('/api/auth',authRoutes);
+
+//health check route 
+app.get('/',(req,res)=>{
+    res.status(200).json({
+        message:"Auth Service is running"
+    })
+})
+
+
+app.use('/api/auth',authRoute)
 
 module.exports = app;
