@@ -10,7 +10,7 @@ import ProtectedRoute from './ProtectedRoute';
 import ProductPage from '../pages/ProductPage';
 import ProfileSettings from '../pages/ProfileSettings';
 import SellerDashboard from '../pages/SellerDashboard';
-import ShopVerseAI from '../pages/ShopverseAI';
+import ShopVerseAI from '../pages/ShopVerseAI';
 import CreateProduct from '../pages/CreateProduct';
 import PageNotFound from '../pages/PageNotFound';
 import OrderDetails from '../pages/OrderDetails';
