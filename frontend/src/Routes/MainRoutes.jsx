@@ -8,13 +8,12 @@ import Orders from '../pages/Orders';
 import Checkout from '../pages/Checkout';
 import ProtectedRoute from './ProtectedRoute';
 import ProductPage from '../pages/ProductPage';
-import OrderDetails from '../pages/OrderDetails';
 import ProfileSettings from '../pages/ProfileSettings';
 import SellerDashboard from '../pages/SellerDashboard';
 import ShopVerseAI from '../pages/ShopverseAI';
 import CreateProduct from '../pages/CreateProduct';
 import PageNotFound from '../pages/PageNotFound';
-
+import OrderDetails from '../pages/OrderDetails';
 
 const MainRoutes = () => {
   return (
