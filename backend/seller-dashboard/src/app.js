@@ -4,7 +4,7 @@ const sellerRoutes =  require("./routes/seller.routes")
 const  cors = require('cors');
 const allowedOrigins = [
     "http://localhost:5173",
-    "https://xyz-store.netlify.app/"
+    "https://shopverse-mart.netlify.app/"
 ]
 
 const app = express();

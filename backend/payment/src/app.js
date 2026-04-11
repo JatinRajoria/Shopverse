@@ -6,7 +6,7 @@ const app = express();
 const allowedOrigins = [
 
     "http://localhost:5173",
-    "https://xyz-store.netlify.app"
+    "https://shopverse-mart.netlify.app"
 
 ];
 

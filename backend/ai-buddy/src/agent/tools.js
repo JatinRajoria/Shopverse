@@ -2,8 +2,8 @@ const { tool } = require('@langchain/core/tools');
 const { z } = require("zod");
 const axios = require('axios');
 
-const BASE_URL_1 = process.env.NODE_ENV === "production" ? "https://xyz-product.onrender.com" : "http://localhost:3001"
-const BASE_URL_2 = process.env.NODE_ENV === "production" ? "https://xyz-cart.onrender.com" : "http://localhost:3002"
+const BASE_URL_1 = process.env.NODE_ENV === "production" ? "https://shopverse-product.onrender.com" : "http://localhost:3001"
+const BASE_URL_2 = process.env.NODE_ENV === "production" ? "https://shopverse-cart.onrender.com" : "http://localhost:3002"
 
 // 1. Search Product Tool
 const searchProduct = tool(

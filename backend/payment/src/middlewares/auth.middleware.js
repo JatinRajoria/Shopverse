@@ -1,37 +1,41 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken")
 
-function createAuthMiddleware(roles = [ "user" ]) {
+function createAuthMiddleware(roles = ["user"]) {
 
     return function authMiddleware(req, res, next) {
-        const token = req.cookies?.token || req.headers?.authorization?.split(' ')[ 1 ];
+        // const token = req.cookies?.token || req.headers?.authorization?.split(' ')[1];
+        // Priority: Header > Cookie
+        const authHeader = req.headers.authorization;
+        const token = (authHeader && authHeader.startsWith('Bearer '))
+            ? authHeader.split(' ')[1]
+            : req.cookies?.token;
 
         if (!token) {
             return res.status(401).json({
-                message: 'Unauthorized: No token provided',
+                message: "Unauthorized : No token provided",
             });
         }
 
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET)
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             if (!roles.includes(decoded.role)) {
                 return res.status(403).json({
-                    message: 'Forbidden: Insufficient permissions',
+                    message: "Forbidden : Insufficient permissions",
                 });
             }
 
-            req.user = decoded;
+            req.user = decoded
             next();
         }
+
         catch (err) {
             return res.status(401).json({
-                message: 'Unauthorized: Invalid token',
-            });
+                message: "Unauthorized : Invalid Token"
+            })
         }
-
     }
 
 }
 
-
-module.exports = createAuthMiddleware;
+module.exports = createAuthMiddleware

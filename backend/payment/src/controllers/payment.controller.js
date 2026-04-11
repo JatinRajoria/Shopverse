@@ -3,7 +3,7 @@ const axios = require('axios')
 const paymentModel = require('../models/payment.model')
 const Razorpay = require('razorpay')
 const { publishToQueue } = require('../broker/broker')
-const BASE_URL_3 = process.env.NODE_ENV === "production" ? "https://xyz-orders.onrender.com" : "http://localhost:3003"
+const BASE_URL_3 = process.env.NODE_ENV === "production" ? "https://shopverse-order.onrender.com" : "http://localhost:3003"
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
