@@ -51,12 +51,13 @@ const ProductDetails = () => {
       if (shouldRedirect) {
         navigate('/checkout');
       } else {
-        toast.success('Added to cart!', {
+        toast.success('Added to cart!',{
+          id: 'cart-added',
           style: { borderRadius: '15px', background: '#333', color: '#fff' }
         });
       }
     } catch (err) {
-      toast.error(err || 'Failed to add item');
+      toast.error(err || 'Failed to add item',{ id: 'cart-error' });
     }
   };
 

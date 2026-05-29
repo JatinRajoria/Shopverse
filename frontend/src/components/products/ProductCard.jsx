@@ -26,13 +26,14 @@ const ProductCard = ({ product }) => {
             setIsSuccess(true);
             toast.success(`${product.title} added to cart!`, {
                 icon: '🛒',
+                id: 'cart-added',
                 style: { borderRadius: '12px', background: '#333', color: '#fff' }
             });
 
             // 2 second baad wapas normal icon
             setTimeout(() => setIsSuccess(false), 2000);
         } catch (error) {
-            toast.error(error || "Failed to add item");
+            toast.error(error || "Failed to add item",{ id: 'cart-error' });
         } finally {
             setIsAdding(false);
         }
