@@ -2,14 +2,23 @@ const nodemailer = require('nodemailer');
 
 // transporter vo action hota hai jo humare email ko send(share) krta hai sbhi jgh
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  // service: 'gmail',
+  // auth: {
+  //   // type: 'OAuth2',
+  //   user: process.env.EMAIL_USER,
+  //   pass: process.env.EMAIL_PASSWORD,
+  //   // clientId: process.env.CLIENT_ID,
+  //   // clientSecret: process.env.CLIENT_SECRET,
+  //   // refreshToken: process.env.REFRESH_TOKEN,
+  // },
+  
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  family: 4,
   auth: {
-    // type: 'OAuth2',
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
-    // clientId: process.env.CLIENT_ID,
-    // clientSecret: process.env.CLIENT_SECRET,
-    // refreshToken: process.env.REFRESH_TOKEN,
   },
 });
 
